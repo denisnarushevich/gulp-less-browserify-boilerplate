@@ -47,8 +47,11 @@ gulp.task('clean', function() {
 });
 
 gulp.task("dist", ["clean"], function(){
-    return gulp.src(["src/index.html", "src/img"])
+    var index = gulp.src(["src/index.html"])
         .pipe(gulp.dest("dist"));
+    var img = gulp.src(["src/img/**/*"])
+        .pipe(gulp.dest("dist/img"));
+    return merge(index,img,css);
 });
 
 gulp.task("compile", ["dist"], compile);
