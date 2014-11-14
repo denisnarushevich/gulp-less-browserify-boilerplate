@@ -8,9 +8,15 @@ var source = require("vinyl-source-stream");
 var clean = require("gulp-clean");
 var merge = require("merge-stream");
 
+function onError(err) {
+    console.log(err);
+        this.emit('end');
+}
+
 function styles(){
     return gulp.src("./src/less/main.less")
         .pipe(less())
+        .on("error", onError)
         .pipe(gulp.dest("./dist/css/"));
 }
 
@@ -21,11 +27,25 @@ function scripts(){
         .pipe(gulp.dest('./dist/js/'));
 }
 
-function compile(){
-    return merge(styles(), scripts());
-}
+gulp.task("scripts", scripts);
 
-function optimize(){
+gulp.task("styles", styles);
+
+gulp.task('clean', function() {
+    return gulp.src("dist").pipe(clean());
+});
+
+//prepares dist folder, by copying everything except less, js sources and misc folder
+gulp.task("dist", ["clean"], function(){
+    return gulp.src(["src/**/*", "!src/less/**/*", "!src/less", "!src/js/**/*", "!src/misc/**/*", "!src/misc"])
+        .pipe(gulp.dest("dist"));
+});
+
+gulp.task("compile", ["dist"], function(){
+    return merge(styles(), scripts());
+});
+
+gulp.task("build", ["compile"], function (){
     var a = gulp.src("dist/js/**/*.js")
         .pipe(uglify())
         .pipe(gulp.dest("dist/js/"));
@@ -36,33 +56,9 @@ function optimize(){
         .pipe(gulp.dest('dist/img'));
 
     return merge(a, b);
-}
-
-gulp.task("scripts", scripts);
-
-gulp.task("styles", styles);
-
-gulp.task('clean', function() {
-    return gulp.src("dist").pipe(clean());
 });
 
-gulp.task("dist", ["clean"], function(){
-    var index = gulp.src(["src/index.html"])
-        .pipe(gulp.dest("dist"));
-    var img = gulp.src(["src/img/**/*"])
-        .pipe(gulp.dest("dist/img"));
-    return merge(index,img,css);
-});
-
-gulp.task("compile", ["dist"], compile);
-
-gulp.task("build", ["compile"], optimize);
-
-// Rerun the task when a file changes
-gulp.task('watch', ["compile"], function() {
+gulp.task('default', ["compile"], function() {
     gulp.watch(["src/js/**/*.js"], ['scripts']);
     gulp.watch(["src/less/**/*.less"], ['styles']);
 });
-
-// The default task (called when you run `gulp` from cli)
-gulp.task('default', ['watch']);
